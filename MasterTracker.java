@@ -12,7 +12,7 @@ public class MasterTracker extends Thread{
 
 	private static final int TRIGGER_ELECTION = 7;
 	private static final int RECEIVED_LEADER = 8; 
-	
+
 	private static MasterTracker masterTracker;
 	private Server server;
 	private boolean listening = false;
@@ -28,7 +28,7 @@ public class MasterTracker extends Thread{
 	public  static MasterTracker getMasterServer(LeaderListener listener){
 		if (MasterTracker.masterTracker == null) masterTracker = new MasterTracker();
 		if(!masterTracker.listening) masterTracker.run();
-		
+
 		masterTracker.listeners.add(listener);
 		return masterTracker;
 	}
@@ -89,23 +89,23 @@ public class MasterTracker extends Thread{
 			}else if(input.contains("6")) {
 				String id = input.split("\n")[1].trim();
 				server = Server.getServerFromId(id);
-				
+
 				for(LeaderListener leaderListener : listeners){
 					leaderListener.onLeaderChange(server);
 				}
 				out.println(RECEIVED_LEADER);
 			}
-			
+
 		}
 	}
-	
+
 	public void unregisterLeaderChangeListener(LeaderListener listener){
 		for(LeaderListener leaderListener:listeners){
 			if(leaderListener == listener){
 				listeners.remove(listener);
 			}
 		}
-		
+
 	}
 
 
