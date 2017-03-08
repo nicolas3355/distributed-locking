@@ -9,16 +9,22 @@ import java.net.Socket;
 import java.util.ArrayList;
 
 public class MasterTracker extends Thread{
+
+	private static final int TRIGGER_ELECTION = 7;
+	private static final int RECEIVED_LEADER = 8; 
 	
 	private static MasterTracker masterTracker;
 	private Server server;
 	private boolean listening = false;
 	private ArrayList<LeaderListener> listeners;
-	//wait for one millisecond
-	private static final int timeOutInMilliseconds = 1000;
+	//wait for two seconds
+	private static final int timeOutInMilliseconds = 2000;
+
+	private int[] ports = {12,123,31,3234};
+	private String[] servers = {"127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1"};
 
 	private MasterTracker(){}
-	
+
 	public  static MasterTracker getMasterServer(LeaderListener listener){
 		if (MasterTracker.masterTracker == null) masterTracker = new MasterTracker();
 		if(!masterTracker.listening) masterTracker.run();
@@ -26,42 +32,81 @@ public class MasterTracker extends Thread{
 		masterTracker.listeners.add(listener);
 		return masterTracker;
 	}
-	
+
 	public Server getLeader(){
-		if(server == null) System.out.println("synchronous");
-		return server; 
+		if(server == null) triggerElection();
+		return server;
 	}
-	
+	public void triggerElection(){
+		new Thread (){
+			public void run(){
+				for (int i=0;i<ports.length;i++){
+					try {
+						Socket socket = new Socket(servers[i],ports[i]);
+						PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+						out.println(TRIGGER_ELECTION);
+						out.close();
+						socket.close();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+		};
+
+	}
+
 	public void run(){
-		//startListening();
 		while (true){
+			try {
+				startListening();
+			} catch(Exception e){
+				e.printStackTrace();
+			}
+		}
+	}
+
+
+	@SuppressWarnings("resource")
+	private void startListening() throws IOException{
+		//listening code
+
+		listening = true;
+		ServerSocket listener = new ServerSocket(9898);
+
+		listener.setSoTimeout(timeOutInMilliseconds);
+		Socket socket = listener.accept();
+
+		BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+		PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+		//trigger an election to surely get a response
+		triggerElection();
+		while (true) {
+			String input = in.readLine();
+			if (input == null || input.equals(".")) {
+				break;
+			}else if(input.contains("6")) {
+				String id = input.split("\n")[1].trim();
+				server = Server.getServerFromId(id);
+				
+				for(LeaderListener leaderListener : listeners){
+					leaderListener.onLeaderChange(server);
+				}
+				out.println(RECEIVED_LEADER);
+			}
 			
 		}
 	}
 	
-	private void startListening() throws IOException{
-		//listening code
-		
-		listening = true;
-		for(LeaderListener listener : listeners){
-			listener.onLeaderChange(server);
+	public void unregisterLeaderChangeListener(LeaderListener listener){
+		for(LeaderListener leaderListener:listeners){
+			if(leaderListener == listener){
+				listeners.remove(listener);
+			}
 		}
-		ServerSocket listener = new ServerSocket(9898);
-		listener.setSoTimeout(timeOutInMilliseconds);
-		Socket socket = listener.accept();
-		BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-
-        // Get messages from the client, line by line; return them
-        // capitalized
-        while (true) {
-            String input = in.readLine();
-            if (input == null || input.equals(".")) {
-                break;
-            }
-            out.println(input.toUpperCase());
-        }
+		
 	}
-	
-	
+
+
 }
