@@ -1,10 +1,10 @@
-public class Server {
+public class Client {
 
 	private int id;
 	private String ipAddress;
 	private int port;
 
-	public Server(int id, String ipAddress, int port) {
+	public Client(int id, String ipAddress, int port) {
 
 		this.id = id;
 		this.ipAddress = ipAddress;
