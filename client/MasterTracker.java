@@ -7,7 +7,10 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Queue;
 
+import hw2.server.Server;
+import hw2.utils.ConfReader;
 import hw2.utils.Messages;
 
 public class MasterTracker extends Thread{
@@ -27,17 +30,20 @@ public class MasterTracker extends Thread{
 	private MasterTracker(){}
 
 	public  static MasterTracker getMasterServer(LeaderListener listener){
-		if (MasterTracker.masterTracker == null) masterTracker = new MasterTracker();
+		if (MasterTracker.masterTracker == null) {
+			masterTracker = new MasterTracker();
+		}
 		if(!masterTracker.listening) masterTracker.run();
-
+		
 		masterTracker.listeners.add(listener);
 		return masterTracker;
 	}
 
 	public Server getLeader(){
-		if(server == null) triggerElection();
+		if(server == null) server = Lock.confreader.getInitialLeader();
 		return server;
 	}
+	
 	public void triggerElection(){
 		new Thread (){
 			public void run(){
@@ -81,15 +87,14 @@ public class MasterTracker extends Thread{
 
 		BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-		//trigger an election to surely get a response
-		triggerElection();
+
 		while (true) {
 			String input = in.readLine();
 			if (input == null || input.equals(".")) {
 				break;
 			}else if(input.contains("6")) {
 				String id = input.split("\n")[1].trim();
-				server = Server.getServerFromId(id);
+				server = Lock.confreader.getServerFromId(Integer.parseInt(id));
 
 				for(LeaderListener leaderListener : listeners){
 					leaderListener.onLeaderChange(server);

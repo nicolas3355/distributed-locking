@@ -1,5 +1,6 @@
 package hw2.server;
 
+
 public class Server {
 
 	private int id;
@@ -35,5 +36,13 @@ public class Server {
 
 	public void setPort(int port) {
 		this.port = port;
+	}
+	
+	
+	@Override
+	public boolean equals(Object obj) {
+		// TODO Auto-generated method stub
+		int id = ((Server)obj).id;
+		return this.id == id;
 	}
 }

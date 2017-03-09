@@ -6,6 +6,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+import hw2.server.Server;
+import hw2.utils.ConfReader;
 import hw2.utils.Messages;
 
 public abstract class Lock extends Thread implements LeaderListener {
@@ -15,9 +17,10 @@ public abstract class Lock extends Thread implements LeaderListener {
 	private Socket socket;
 	private String id;
 
+	
 	private MasterTracker masterTracker;
 	private ClientState currentState = ClientState.Waiting;
-
+	public static ConfReader confreader;
 	/**
 	 * construct the locking services
 	 * @param str
@@ -26,6 +29,10 @@ public abstract class Lock extends Thread implements LeaderListener {
 
 
 	public Lock(String lockingString, String id){
+		if(confreader == null){
+			confreader = new ConfReader();
+			confreader.readConfiguration();
+		}
 		this.lockingString = lockingString;
 		this.id = id;
 	}
@@ -52,8 +59,8 @@ public abstract class Lock extends Thread implements LeaderListener {
 
 	private void startConnection(){
 
-		String ip = server.ip;
-		int port = server.port;
+		String ip = server.getIpAddress();
+		int port = server.getPort();
 		try {
 			socket = new Socket(ip, port);
 			socket.setKeepAlive(true);
@@ -91,6 +98,7 @@ public abstract class Lock extends Thread implements LeaderListener {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			masterTracker.triggerElection();
 		}
 	}
 
