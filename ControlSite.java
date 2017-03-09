@@ -62,44 +62,92 @@ public class ControlSite {
 		return null;
 	}
 
-	public void addToQueue(String criticalSectionId, Client process) {
+	public void addToQueue(String criticalSectionId, int processId) {
 
 		if (criticalSectionsRequests.containsKey(criticalSectionId))
 			try {
-				criticalSectionsRequests.get(criticalSectionId).put(
-						process.getId());
-			} catch (InterruptedException e1) {
+				// avoid duplicate entries of the same process
+				if (criticalSectionsRequests.get(criticalSectionId).size() > 0)
+					if (criticalSectionsRequests.get(criticalSectionId).peek() != processId)
+						criticalSectionsRequests.get(criticalSectionId).put(
+								processId);
+			} catch (Exception e1) {
 				e1.printStackTrace();
 			}
 		else {
 			criticalSectionsRequests.put(criticalSectionId,
 					new LinkedBlockingQueue());
 			try {
-				criticalSectionsRequests.get(criticalSectionId).put(
-						process.getId());
-			} catch (InterruptedException e) {
+				criticalSectionsRequests.get(criticalSectionId).put(processId);
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
 
-		updateOthers(OFFER_QUEUE, criticalSectionId, process);
+		// master needs to update others when it applies changes to its queue
+		if (leaderId == controlSiteId)
+			updateOthers(OFFER_QUEUE, criticalSectionId, processId);
 	}
 
-	public void removeFromQueue(String criticalSectionId) {
+	public void removeFromQueue(String criticalSectionId, int processId) {
 
 		try {
-			criticalSectionsRequests.get(criticalSectionId).take();
-		} catch (InterruptedException e1) {
+			if (criticalSectionsRequests.get(criticalSectionId) != null)
+				// make sure you're polling the right process
+				if (criticalSectionsRequests.get(criticalSectionId).peek() == processId)
+					criticalSectionsRequests.get(criticalSectionId).take();
+
+		} catch (Exception e1) {
 			e1.printStackTrace();
 		}
 
-		updateOthers(POLL_QUEUE, criticalSectionId, null);
+		// leader needs to update others when it applies changes to its queue
+		if (leaderId == controlSiteId)
+			updateOthers(POLL_QUEUE, criticalSectionId, processId);
 	}
 
 	public void updateOthers(int required, String criticalSectionId,
-			Client process) {
+			int processId) {
 
 		// reliable sync
+		for (int i = 0; i < controlSites.length; i++) {
+
+			// since if I'm the leader then all the process of bigger id's are
+			// already dead
+			// no need to send to them
+			if (controlSites[i].getId() < controlSiteId) {
+
+				try {
+
+					Socket sock = new Socket(controlSites[i].getIpAddress(),
+							controlSites[i].getPort());
+
+					PrintWriter pout = new PrintWriter(sock.getOutputStream(),
+							true);
+
+					pout.println(required);
+					pout.println(processId);
+					pout.println(criticalSectionId);
+					sock.close();
+
+				} catch (Exception e) {
+
+				}
+			} else
+				break;
+		}
+	}
+
+	// called by the leader when it wants to apply changes to its queue
+	// and by others when they receive the updates from the leader
+	public void updateQueue(int required, String criticalSectionId,
+			int processId) {
+
+		if (required == ControlSite.POLL_QUEUE)
+			removeFromQueue(criticalSectionId, processId);
+
+		else if (required == ControlSite.OFFER_QUEUE)
+			addToQueue(criticalSectionId, processId);
 	}
 
 	public void electLeader() {
@@ -172,7 +220,7 @@ public class ControlSite {
 					} else
 						break;
 				}
-				
+
 				for (int i = 0; i < clients.length; i++) {
 
 					// inform all clients of the new leader
@@ -218,31 +266,26 @@ public class ControlSite {
 							&& message == Process.REQUEST_MESSAGE) {
 
 						line = bin.readLine();
-						int id = Integer.parseInt(line);
+						int processId = Integer.parseInt(line);
 						String requestedCS = bin.readLine();
 
-						Client p = getClientById(id);
-
 						// new thread to handle this request
-						new RequestHandler(p, clientSocket, requestedCS).run();
+						new RequestHandler(processId, clientSocket, requestedCS)
+								.run();
 					}
 
 					// to synchronize changes in the queues
 					// when master adds/polls client i to/from queue a
 					// it should inform all other control sites to do the same
 
-					else if (message == ControlSite.OFFER_QUEUE) {
+					else if (message == ControlSite.OFFER_QUEUE
+							|| message == ControlSite.POLL_QUEUE) {
 
 						String criticalSectionId = bin.readLine();
 						int processId = Integer.parseInt(bin.readLine());
-						Client process = getClientById(processId);
 
-						addToQueue(criticalSectionId, process);
+						updateQueue(message, criticalSectionId, processId);
 
-					} else if (message == ControlSite.POLL_QUEUE) {
-
-						String criticalSectionId = bin.readLine();
-						removeFromQueue(criticalSectionId);
 					}
 
 					// election can either be triggered by process or by another
@@ -256,11 +299,13 @@ public class ControlSite {
 							electLeader();
 						}
 
-						// if received election message
+						// if received election message from another server
 						if (message == ControlSite.ELECTION_START) {
 							pout.println(ELECTION_OK);
 						}
-					} else if (message == NEW_LEADER) {
+					}
+
+					else if (message == NEW_LEADER) {
 
 						line = bin.readLine();
 						leaderId = Integer.parseInt(line);
@@ -276,14 +321,14 @@ public class ControlSite {
 
 	private class RequestHandler extends Thread {
 
-		private Client process;
-		private Socket clientSocket;
+		private int processId; // process this thread is handling
+		private Socket clientSocket; // the socket this thread is responding to
 		private String requestedCS;
 
-		public RequestHandler(Client process, Socket clientSocket,
+		public RequestHandler(int processId, Socket clientSocket,
 				String requestedCS) {
 
-			this.process = process;
+			this.processId = processId;
 			this.clientSocket = clientSocket;
 			this.requestedCS = requestedCS;
 		}
@@ -292,14 +337,13 @@ public class ControlSite {
 
 			// add this process to the queue of processes requesting this
 			// critical section
-			addToQueue(requestedCS, process);
+			updateQueue(ControlSite.OFFER_QUEUE, requestedCS, processId);
 
-			while (criticalSectionsRequests.get(requestedCS).peek() != process
-					.getId())
-				; // wait for process' turn
+			while (criticalSectionsRequests.get(requestedCS).peek() != processId)
+				; // wait for this process' turn in the requested critical
+					// section
 
-			if (criticalSectionsRequests.get(requestedCS).peek() == process
-					.getId()) {
+			if (criticalSectionsRequests.get(requestedCS).peek() == processId) {
 
 				try {
 
@@ -336,7 +380,8 @@ public class ControlSite {
 								 * else
 								 */if (message == Process.RELEASE_MESSAGE) {
 
-									removeFromQueue(requestedCS);
+									updateQueue(ControlSite.POLL_QUEUE,
+											requestedCS, processId);
 									pout.println(ControlSite.RELEASE_RECEIVED);
 									clientSocket.close();
 									break;
@@ -350,8 +395,8 @@ public class ControlSite {
 					// process crashed
 
 					System.out.println("Master noticed that process "
-							+ process.getId() + " crashed");
-					removeFromQueue(requestedCS);
+							+ processId + " crashed");
+					updateQueue(ControlSite.POLL_QUEUE, requestedCS, processId);
 					e.printStackTrace();
 				}
 			}
