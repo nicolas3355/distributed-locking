@@ -1,4 +1,4 @@
-package client;
+package hw2.client;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -6,7 +6,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-import utils.Messages;
+import hw2.utils.Messages;
 
 public abstract class Lock extends Thread implements LeaderListener {
 

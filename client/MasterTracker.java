@@ -1,4 +1,4 @@
-package client;
+package hw2.client;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -8,7 +8,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
-import utils.Messages;
+import hw2.utils.Messages;
 
 public class MasterTracker extends Thread{
 

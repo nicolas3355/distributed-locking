@@ -1,4 +1,4 @@
-package server;
+package hw2.server;
 
 public class Server {
 

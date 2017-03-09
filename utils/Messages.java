@@ -1,4 +1,4 @@
-package utils;
+package hw2.utils;
 
 public class Messages {
 

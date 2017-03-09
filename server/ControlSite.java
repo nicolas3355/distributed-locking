@@ -1,4 +1,4 @@
-package server;
+package hw2.server;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -10,7 +10,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import utils.Messages;
+import hw2.utils.Messages;
 
 public class ControlSite {
 
