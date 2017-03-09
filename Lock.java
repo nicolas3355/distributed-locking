@@ -39,6 +39,7 @@ public abstract class Lock extends Thread implements LeaderListener {
 
 	public Lock(String lockingString, String id){
 		this.lockingString = lockingString;
+		this.id = id;
 	}
 
 	@Override
