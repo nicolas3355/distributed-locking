@@ -15,21 +15,20 @@ import hw2.utils.Messages;
 public class ControlSite {
 
 
-	public static final int TIMEOUT_INTERVAL = 3000;
-
 	private int listeningPort; // port this server listens on
 	private int controlSiteId; // my id
 	private Server[] controlSites; // all control sites/ master processes
-	private Client[] clients; // all client processes
+	private Process[] clients; // all client processes
 	private int leaderId; // id of the leader control site
 	private ConcurrentHashMap<String, BlockingQueue<Integer>> criticalSectionsRequests; // critical
-																						// sections
-																						// queues
+	private int TIMEOUT_INTERVAL;
+	// sections
+	// queues
 
 	private boolean runningElection; // leader election in progress
 
 	public ControlSite(int listeningPort, int controlSiteId,
-			Server[] controlSites, Client[] clients, int leaderId) {
+			Server[] controlSites, Process[] clients, int leaderId) {
 
 		this.listeningPort = listeningPort;
 		this.controlSiteId = controlSiteId;
@@ -44,23 +43,15 @@ public class ControlSite {
 		new ServerListener().run();
 	}
 
-	public Client getClientById(int id) {
-
-		for (int i = 0; i < clients.length; i++)
-			if (clients[i].getId() == id)
-				return clients[i];
-		return null;
-	}
-
 	public void addToQueue(String criticalSectionId, int processId) {
 
 		if (criticalSectionsRequests.containsKey(criticalSectionId))
 			try {
 				// avoid duplicate entries of the same process
-				if (criticalSectionsRequests.get(criticalSectionId).size() > 0)
-					if (criticalSectionsRequests.get(criticalSectionId).peek() != processId)
-						criticalSectionsRequests.get(criticalSectionId).put(
-								processId);
+				if (!criticalSectionsRequests.get(criticalSectionId).contains(
+						processId))
+					criticalSectionsRequests.get(criticalSectionId).put(
+							processId);
 			} catch (Exception e1) {
 				e1.printStackTrace();
 			}
@@ -75,7 +66,7 @@ public class ControlSite {
 		}
 
 		// master needs to update others when it applies changes to its queue
-			updateOthers(Messages.OFFER_QUEUE, criticalSectionId, processId);
+		updateOthers(Messages.OFFER_QUEUE, criticalSectionId, processId);
 	}
 
 	public void removeFromQueue(String criticalSectionId, int processId) {
@@ -91,7 +82,7 @@ public class ControlSite {
 		}
 
 		// leader needs to update others when it applies changes to its queue
-			updateOthers(Messages.POLL_QUEUE, criticalSectionId, processId);
+		updateOthers(Messages.POLL_QUEUE, criticalSectionId, processId);
 	}
 
 	public void updateOthers(int required, String criticalSectionId,
@@ -149,19 +140,15 @@ public class ControlSite {
 			if (controlSites[i].getId() > controlSiteId) {
 
 				try {
-					// long startTime = System.currentTimeMillis();
+					long startTime = System.currentTimeMillis();
 					Socket sock = new Socket(controlSites[i].getIpAddress(),
 							controlSites[i].getPort());
-					sock.setKeepAlive(true);
-					sock.setSoTimeout(TIMEOUT_INTERVAL);
 
 					PrintWriter pout = new PrintWriter(sock.getOutputStream(),
 							true);
 					pout.println(Messages.ELECTION_START);
 
-					w: while (true) {
-						// w: while (System.currentTimeMillis() - startTime <
-						// CONTROL_SITE_TIMEOUT_INTERVAL) {
+					w: while (System.currentTimeMillis() - startTime < TIMEOUT_INTERVAL) {
 
 						InputStream in = sock.getInputStream();
 						BufferedReader bin = new BufferedReader(
@@ -218,7 +205,6 @@ public class ControlSite {
 							true);
 					pout.println(Messages.NEW_LEADER);
 					pout.println(controlSiteId);
-					pout.flush();
 
 					sock.close();
 				}
@@ -253,27 +239,26 @@ public class ControlSite {
 					if (leaderId == controlSiteId
 							&& message == Messages.STRING_TO_LOCK_ON) {
 
+						String requestedCS = bin.readLine();
 						line = bin.readLine();
 						int processId = Integer.parseInt(line);
-						String requestedCS = bin.readLine();
 
 						// new thread to handle this request
 						new RequestHandler(processId, clientSocket, requestedCS)
-								.run();
+						.run();
 					}
 
 					// to synchronize changes in the queues
 					// when master adds/polls client i to/from queue a
 					// it should inform all other control sites to do the same
 
-					else if (message == Messages.OFFER_QUEUE
+					else if (message ==Messages.OFFER_QUEUE
 							|| message == Messages.POLL_QUEUE) {
 
 						String criticalSectionId = bin.readLine();
 						int processId = Integer.parseInt(bin.readLine());
 
 						updateQueue(message, criticalSectionId, processId);
-
 					}
 
 					// election can either be triggered by process or by another
@@ -281,7 +266,6 @@ public class ControlSite {
 					else if (message == Messages.ELECTION_START) {
 
 						if (!runningElection) {
-
 							runningElection = true;
 							electLeader();
 						}
@@ -290,6 +274,16 @@ public class ControlSite {
 						if (message == Messages.ELECTION_START) {
 							pout.println(Messages.ELECTION_OK);
 						}
+					}
+
+					else if (message == Messages.RELEASE) {
+
+						String requestedCS = bin.readLine();
+						line = bin.readLine();
+						int processId = Integer.parseInt(line);
+
+						updateOthers(Messages.POLL_QUEUE, requestedCS, processId);
+						pout.println(Messages.RELEASE_RECEIVED);
 					}
 
 					else if (message == Messages.NEW_LEADER) {
@@ -326,66 +320,64 @@ public class ControlSite {
 			// critical section
 			updateQueue(Messages.OFFER_QUEUE, requestedCS, processId);
 
-			while (criticalSectionsRequests.get(requestedCS).peek() != processId)
-				; // wait for this process' turn in the requested critical
-					// section
+			try {
 
-			if (criticalSectionsRequests.get(requestedCS).peek() == processId) {
+				InputStream in = clientSocket.getInputStream();
+				BufferedReader bin = new BufferedReader(new InputStreamReader(
+						in));
+				PrintWriter pout = new PrintWriter(
+						clientSocket.getOutputStream(), true);
 
-				try {
+				while (criticalSectionsRequests.get(requestedCS).peek() != processId)
+					pout.println(Messages.HEART_BEAT);
 
-					InputStream in = clientSocket.getInputStream();
-					BufferedReader bin = new BufferedReader(
-							new InputStreamReader(in));
-					PrintWriter pout = new PrintWriter(
-							clientSocket.getOutputStream(), true);
+				if (criticalSectionsRequests.get(requestedCS).peek() == processId) {
 
 					pout.println(Messages.LOCK_ACQUIRED);
-					// long startTime = System.currentTimeMillis();
+					long startTime = System.currentTimeMillis();
 
 					while (true) {
 
-						/*
-						 * if (System.currentTimeMillis() - startTime >=
-						 * PROCESS_TIMEOUT_INTERVAL) {
-						 * 
-						 * System.out.println("Process crashed");
-						 * criticalSectionsRequests.get(requestedCS).take();
-						 * client.close(); break; } else {
-						 */
-						if (bin.ready()) {
+						if (System.currentTimeMillis() - startTime >= TIMEOUT_INTERVAL) {
 
-							String line;
-							if ((line = bin.readLine()) != null) {
+							System.out.println("Process crashed");
+							criticalSectionsRequests.get(requestedCS).take();
+							clientSocket.close();
+							break;
+						} else {
 
-								int message = Integer.parseInt(line);
+							if (bin.ready()) {
 
-								/*
-								 * if (message == Process.HEART_BEAT_MESSAGE) {
-								 * startTime = System.currentTimeMillis(); }
-								 * 
-								 * else
-								 */if (message == Messages.RELEASE) {
+								String line;
+								if ((line = bin.readLine()) != null) {
 
-									updateQueue(Messages.POLL_QUEUE,
-											requestedCS, processId);
-									pout.println(Messages.RELEASE_RECEIVED);
-									clientSocket.close();
-									break;
+									int message = Integer.parseInt(line);
+
+									if (message == Messages.HEART_BEAT) {
+										startTime = System.currentTimeMillis();
+									}
+
+									else if (message == Messages.RELEASE) {
+
+										updateQueue(Messages.POLL_QUEUE,
+												requestedCS, processId);
+										pout.println(Messages.RELEASE_RECEIVED);
+										clientSocket.close();
+										break;
+									}
 								}
 							}
 						}
 					}
-					// }
-				} catch (Exception e) {
-
-					// process crashed
-
-					System.out.println("Master noticed that process "
-							+ processId + " crashed");
-					updateQueue(Messages.POLL_QUEUE, requestedCS, processId);
-					e.printStackTrace();
 				}
+			} catch (Exception e) {
+
+				// process crashed
+
+				System.out.println("Master noticed that process " + processId
+						+ " crashed");
+				updateQueue(Messages.POLL_QUEUE, requestedCS, processId);
+				e.printStackTrace();
 			}
 		}
 	}

@@ -1,16 +1,15 @@
 package hw2.utils;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.Scanner;
 
 import hw2.server.Server;
-
+import hw2.server.Process;
 
 public class ConfReader {
 
 	private Server[] servers;
-	private Server[] clients;
+	private Process[] clients;
 	
 	public void readConfiguration(){
 		Scanner scan;
@@ -24,10 +23,10 @@ public class ConfReader {
 			servers[i] = new Server(scan.nextInt(), scan.next(), scan.nextInt());
 
 		int m = scan.nextInt();
-		clients = new Server[m];
+		clients = new Process[m];
 
 		for (int i = 0; i < m; i++)
-			clients[i] = new Server(scan.nextInt(), scan.next(), scan.nextInt());
+			clients[i] = new Process(scan.nextInt(), scan.next(), scan.nextInt());
 
 		scan.close();
 		} catch(Exception e){
@@ -40,7 +39,7 @@ public class ConfReader {
 		return servers;
 	}
 	
-	public Server[] getClients() {
+	public Process[] getClients() {
 		return clients;
 	}
 	

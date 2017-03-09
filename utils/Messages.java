@@ -24,4 +24,5 @@ public class Messages {
 	public static final int ELECTION_START = 7;
 	public static final int ELECTION_OK = 8;
 	public static final int NEW_LEADER = 9;
+	public static final int HEART_BEAT = 12;
 }

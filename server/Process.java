@@ -1,12 +1,12 @@
 package hw2.server;
 
-public class Client {
+public class Process{
 
 	private int id;
 	private String ipAddress;
 	private int port;
 
-	public Client(int id, String ipAddress, int port) {
+	public Process(int id, String ipAddress, int port) {
 
 		this.id = id;
 		this.ipAddress = ipAddress;
