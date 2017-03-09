@@ -8,7 +8,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
-import hw2.server.Server;
+import hw2.server.Host;
+import hw2.utils.ConfReader;
 import hw2.utils.Messages;
 
 public class MasterTracker extends Thread{
@@ -16,7 +17,7 @@ public class MasterTracker extends Thread{
 
 
 	private static MasterTracker masterTracker;
-	private Server server;
+	private Host server;
 	private boolean listening = false;
 	private ArrayList<LeaderListener> listeners;
 
@@ -32,7 +33,7 @@ public class MasterTracker extends Thread{
 		return masterTracker;
 	}
 
-	public Server getLeader(){
+	public Host getLeader(){
 		if(server == null) server = Lock.confreader.getInitialLeader();
 		return server;
 	}
@@ -40,7 +41,7 @@ public class MasterTracker extends Thread{
 	public void triggerElection(){
 		new Thread (){
 			public void run(){
-				Server[] servers = Lock.confreader.getServers();
+				Host[] servers = Lock.confreader.getServers();
 				for (int i=0;i<servers.length;i++){
 					try {
 						Socket socket = new Socket(servers[i].getIpAddress(),servers[i].getPort());
@@ -74,7 +75,7 @@ public class MasterTracker extends Thread{
 		//listening code
 
 		listening = true;
-		ServerSocket listener = new ServerSocket(9898);
+		ServerSocket listener = new ServerSocket(ConfReader.getCurrentHost().getPort());
 		Socket socket = listener.accept();
 
 		BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -82,6 +83,7 @@ public class MasterTracker extends Thread{
 
 		while (true) {
 			String input = in.readLine();
+			System.out.println("server is saying "+input);
 			if (input == null || input.equals(".")) {
 				break;
 			}else if(input.contains(Messages.NEW_LEADER+"")) {

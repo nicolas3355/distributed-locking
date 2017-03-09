@@ -6,17 +6,16 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-import hw2.server.Server;
+import hw2.server.Host;
 import hw2.utils.ConfReader;
 import hw2.utils.Messages;
 
 public abstract class Lock extends Thread implements LeaderListener {
 
 	private String lockingString;
-	private Server server;
+	private Host server;
 	private Socket socket;
 	private String id;
-
 	
 	private MasterTracker masterTracker;
 	private ClientState currentState = ClientState.Waiting;
@@ -30,15 +29,16 @@ public abstract class Lock extends Thread implements LeaderListener {
 
 	public Lock(String lockingString, String id){
 		if(confreader == null){
-			confreader = new ConfReader();
+			confreader = new ConfReader(id);
 			confreader.readConfiguration();
 		}
 		this.lockingString = lockingString;
 		this.id = id;
+	
 	}
 
 	@Override
-	public void onLeaderChange(Server server) {
+	public void onLeaderChange(Host server) {
 		// TODO Auto-generated method stub
 
 		//stop the connection with the current one 
@@ -55,6 +55,7 @@ public abstract class Lock extends Thread implements LeaderListener {
 		masterTracker = MasterTracker.getMasterServer(this);
 		server = masterTracker.getLeader();
 		if(server == null) currentState = ClientState.Waiting;
+		startConnection();
 	}
 
 	private void startConnection(){
@@ -102,7 +103,10 @@ public abstract class Lock extends Thread implements LeaderListener {
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
+			System.out.println("starting election");
 			masterTracker.triggerElection();
+		} finally {
+			stopConnection();
 		}
 	}
 

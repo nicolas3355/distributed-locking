@@ -17,8 +17,8 @@ public class ControlSite {
 
 	private int listeningPort; // port this server listens on
 	private int controlSiteId; // my id
-	private Server[] controlSites; // all control sites/ master processes
-	private Process[] clients; // all client processes
+	private Host[] controlSites; // all control sites/ master processes
+	private Host[] clients; // all client processes
 	private int leaderId; // id of the leader control site
 	private ConcurrentHashMap<String, BlockingQueue<Integer>> criticalSectionsRequests; // critical
 	private int TIMEOUT_INTERVAL;
@@ -28,7 +28,7 @@ public class ControlSite {
 	private boolean runningElection; // leader election in progress
 
 	public ControlSite(int listeningPort, int controlSiteId,
-			Server[] controlSites, Process[] clients, int leaderId) {
+			Host[] controlSites, Host[] clients, int leaderId) {
 
 		this.listeningPort = listeningPort;
 		this.controlSiteId = controlSiteId;

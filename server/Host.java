@@ -1,13 +1,13 @@
 package hw2.server;
 
 
-public class Server {
+public class Host {
 
 	private int id;
 	private String ipAddress;
 	private int port;
 
-	public Server(int id, String ipAddress, int port) {
+	public Host(int id, String ipAddress, int port) {
 
 		this.id = id;
 		this.ipAddress = ipAddress;
@@ -42,7 +42,7 @@ public class Server {
 	@Override
 	public boolean equals(Object obj) {
 		// TODO Auto-generated method stub
-		int id = ((Server)obj).id;
+		int id = ((Host)obj).id;
 		return this.id == id;
 	}
 }

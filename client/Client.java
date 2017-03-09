@@ -5,6 +5,7 @@ public class Client{
 	public static void main(String[] args){
 
 		String id = args[0];
+		//MasterTracker masterTracker = MasterTracker.getMasterServer(listener)
 		Lock lock = null;
 		while (true){
 			if(lock == null){

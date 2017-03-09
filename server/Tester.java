@@ -5,11 +5,12 @@ import hw2.utils.ConfReader;
 public class Tester {
 
 	public static void main(String args[]){
-		int id = Integer.parseInt(args[0]);
 		
-		ConfReader confreader = new ConfReader();
+		
+		ConfReader confreader = new ConfReader(args[0]);
 		confreader.readConfiguration();
-		Server server = confreader.getServerFromId(id);
+		int id = Integer.parseInt(args[0]);
+		Host server = confreader.getServerFromId(id);
 		try {
 			new ControlSite(server.getPort(),id,confreader.getServers()
 					,confreader.getClients(),confreader.getInitialLeader().getId()).start();
@@ -17,5 +18,6 @@ public class Tester {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
 	}
 }
