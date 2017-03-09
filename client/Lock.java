@@ -88,6 +88,7 @@ public abstract class Lock extends Thread implements LeaderListener {
 				if(str.contains(""+Messages.WAITING)){
 					currentState = ClientState.Waiting;
 				}else if(str.contains(""+Messages.LOCK_ACQUIRED)){
+					System.out.println("lock acquired");
 					currentState = ClientState.Executing;
 					//start a new thread and pummp heart beat
 					Thread thread = sendHeartBeat(out);
@@ -95,9 +96,12 @@ public abstract class Lock extends Thread implements LeaderListener {
 					onLockReceived();
 					thread.interrupt();
 					//kill that thread and continue
+					
 					currentState = ClientState.PostExecuting;
 					out.println(Messages.RELEASE);
+					System.out.println("sent release");
 				}else if(str.contains(""+Messages.RELEASE_RECEIVED)){
+					System.out.println("received release");
 					currentState = ClientState.Finsihed;
 					masterTracker.unregisterLeaderChangeListener(this);
 					masterTracker = null;
@@ -109,6 +113,7 @@ public abstract class Lock extends Thread implements LeaderListener {
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
+			e.printStackTrace();
 			System.out.println("starting election");
 			masterTracker.triggerElection();
 		} finally {

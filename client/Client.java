@@ -2,24 +2,19 @@ package hw2.client;
 
 public class Client{
 
-	public static void main(String[] args){
+	public static void main(String[] args) throws InterruptedException{
 
 		String id = args[0];
-		//MasterTracker masterTracker = MasterTracker.getMasterServer(listener)
-		Lock lock = null;
-		while (true){
-			if(lock == null){
-				lock = new Lock("string",id) {
+		Lock lock = new Lock("string",id) {
 
-					@Override
-					protected void onLockReceived() {
-						// TODO Auto-generated method stub
-						System.out.println("i am in the critical section");
-					}
-				};
-				lock.start();
+			@Override
+			protected void onLockReceived() {
+				// TODO Auto-generated method stub
+				System.out.println("i am in the critical section");
 			}
-		}
+		};
+		lock.start();
 
+		lock.join();
 	}
 }
