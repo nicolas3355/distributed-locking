@@ -1,4 +1,4 @@
-package hw2;
+package client;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -8,10 +8,11 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
+import utils.Messages;
+
 public class MasterTracker extends Thread{
 
-	private static final int TRIGGER_ELECTION = 7;
-	private static final int RECEIVED_LEADER = 8; 
+
 
 	private static MasterTracker masterTracker;
 	private Server server;
@@ -44,7 +45,7 @@ public class MasterTracker extends Thread{
 					try {
 						Socket socket = new Socket(servers[i],ports[i]);
 						PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-						out.println(TRIGGER_ELECTION);
+						out.println(Messages.ELECTION_START);
 						out.close();
 						socket.close();
 					} catch (IOException e) {
@@ -93,7 +94,7 @@ public class MasterTracker extends Thread{
 				for(LeaderListener leaderListener : listeners){
 					leaderListener.onLeaderChange(server);
 				}
-				out.println(RECEIVED_LEADER);
+				out.println("received the leader");
 			}
 
 		}

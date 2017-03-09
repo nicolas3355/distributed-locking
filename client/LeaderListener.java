@@ -1,4 +1,4 @@
-package hw2;
+package client;
 
 public interface LeaderListener {
 	void onLeaderChange(Server server);

@@ -1,10 +1,12 @@
-package hw2;
+package client;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+
+import utils.Messages;
 
 public abstract class Lock extends Thread implements LeaderListener {
 
@@ -15,20 +17,6 @@ public abstract class Lock extends Thread implements LeaderListener {
 
 	private MasterTracker masterTracker;
 	private ClientState currentState = ClientState.Waiting;
-
-	/**
-	 * things to expect from server
-	 */
-	private static final String LOCK_ACQUIRED = "1";
-	private static final String WAITING = "2";
-	private static final String RELEASE_RECEIVED = "3";
-
-	/**
-	 * things to send to server
-	 */
-	private static final String STRING_TO_LOCK_ON = "4";
-	private static final String RELEASE = "5";
-	private static final String ID = "6";
 
 	/**
 	 * construct the locking services
@@ -71,26 +59,26 @@ public abstract class Lock extends Thread implements LeaderListener {
 			socket.setKeepAlive(true);
 			BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-			out.println(ID);
-			out.println(id);
+
 			if(currentState == ClientState.Waiting){
-				out.println(STRING_TO_LOCK_ON);
+				out.println(Messages.STRING_TO_LOCK_ON);
 				out.println(lockingString);
 			}else if(currentState == ClientState.PostExecuting){
-				out.println(RELEASE);
-			}
+				out.println(Messages.RELEASE);
+			}			
+			out.println(id);
 			while(true){
 				String str = in.readLine();
 				if(str == null) continue;
 
-				if(str.contains(WAITING)){
+				if(str.contains(""+Messages.WAITING)){
 					currentState = ClientState.Waiting;
-				}else if(str.contains(LOCK_ACQUIRED)){
+				}else if(str.contains(""+Messages.LOCK_ACQUIRED)){
 					currentState = ClientState.Executing;
 					onLockReceived();
 					currentState = ClientState.PostExecuting;
-					out.println(RELEASE);
-				}else if(str.contains(RELEASE_RECEIVED)){
+					out.println(Messages.RELEASE);
+				}else if(str.contains(""+Messages.RELEASE_RECEIVED)){
 					currentState = ClientState.Finsihed;
 					masterTracker.unregisterLeaderChangeListener(this);
 					masterTracker = null;

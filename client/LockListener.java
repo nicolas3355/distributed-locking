@@ -1,4 +1,4 @@
-package hw2;
+package client;
 
 public interface LockListener {
 	public void onLockReceived();
