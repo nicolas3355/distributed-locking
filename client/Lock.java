@@ -82,7 +82,9 @@ public abstract class Lock extends Thread implements LeaderListener {
 					currentState = ClientState.Waiting;
 				}else if(str.contains(""+Messages.LOCK_ACQUIRED)){
 					currentState = ClientState.Executing;
+					//start a new thread and pummp heart beat
 					onLockReceived();
+					//kill that thread and continue
 					currentState = ClientState.PostExecuting;
 					out.println(Messages.RELEASE);
 				}else if(str.contains(""+Messages.RELEASE_RECEIVED)){
@@ -97,7 +99,6 @@ public abstract class Lock extends Thread implements LeaderListener {
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
 			masterTracker.triggerElection();
 		}
 	}

@@ -24,8 +24,6 @@ public class MasterTracker extends Thread{
 	//wait for two seconds
 	private static final int timeOutInMilliseconds = 2000;
 
-	private int[] ports = {12,123,31,3234};
-	private String[] servers = {"127.0.0.1","127.0.0.1","127.0.0.1","127.0.0.1"};
 
 	private MasterTracker(){}
 
@@ -47,9 +45,10 @@ public class MasterTracker extends Thread{
 	public void triggerElection(){
 		new Thread (){
 			public void run(){
-				for (int i=0;i<ports.length;i++){
+				Server[] servers = Lock.confreader.getServers();
+				for (int i=0;i<servers.length;i++){
 					try {
-						Socket socket = new Socket(servers[i],ports[i]);
+						Socket socket = new Socket(servers[i].getIpAddress(),servers[i].getPort());
 						PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 						out.println(Messages.ELECTION_START);
 						out.close();
@@ -92,7 +91,7 @@ public class MasterTracker extends Thread{
 			String input = in.readLine();
 			if (input == null || input.equals(".")) {
 				break;
-			}else if(input.contains("6")) {
+			}else if(input.contains(Messages.NEW_LEADER+"")) {
 				String id = input.split("\n")[1].trim();
 				server = Lock.confreader.getServerFromId(Integer.parseInt(id));
 
