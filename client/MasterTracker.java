@@ -21,13 +21,16 @@ public class MasterTracker extends Thread{
 	private boolean listening = false;
 	private ArrayList<LeaderListener> listeners;
 
-	private MasterTracker(){}
+	private MasterTracker(){
+		listeners = new ArrayList<>();
+	}
 
 	public  static MasterTracker getMasterServer(LeaderListener listener){
+		System.out.println("enterd master tracker");
 		if (MasterTracker.masterTracker == null) {
 			masterTracker = new MasterTracker();
 		}
-		if(!masterTracker.listening) masterTracker.run();
+		if(!masterTracker.listening) masterTracker.start();
 		
 		masterTracker.listeners.add(listener);
 		return masterTracker;
@@ -41,6 +44,7 @@ public class MasterTracker extends Thread{
 	public void triggerElection(){
 		new Thread (){
 			public void run(){
+				System.out.println("election");
 				Host[] servers = Lock.confreader.getServers();
 				for (int i=0;i<servers.length;i++){
 					try {
@@ -55,7 +59,7 @@ public class MasterTracker extends Thread{
 					}
 				}
 			}
-		};
+		}.start();
 
 	}
 
@@ -73,7 +77,7 @@ public class MasterTracker extends Thread{
 	@SuppressWarnings("resource")
 	private void startListening() throws IOException{
 		//listening code
-
+		System.out.println("listenning to the new leader");
 		listening = true;
 		ServerSocket listener = new ServerSocket(ConfReader.getCurrentHost().getPort());
 		Socket socket = listener.accept();

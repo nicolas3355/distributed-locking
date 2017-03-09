@@ -34,7 +34,8 @@ public abstract class Lock extends Thread implements LeaderListener {
 		}
 		this.lockingString = lockingString;
 		this.id = id;
-	
+		System.out.println("intializtion");
+
 	}
 
 	@Override
@@ -45,6 +46,7 @@ public abstract class Lock extends Thread implements LeaderListener {
 		//start a new connection with the new server
 		if(this.server != null && this.server.equals(server)) return;
 		this.server = server;
+		System.out.println("leader changed");
 
 		stopConnection();
 		startConnection();
@@ -52,7 +54,10 @@ public abstract class Lock extends Thread implements LeaderListener {
 	}
 
 	public void run(){
+		System.out.println("running");
 		masterTracker = MasterTracker.getMasterServer(this);
+		System.out.println("trying to reach the leader");
+
 		server = masterTracker.getLeader();
 		if(server == null) currentState = ClientState.Waiting;
 		startConnection();
@@ -63,6 +68,7 @@ public abstract class Lock extends Thread implements LeaderListener {
 		String ip = server.getIpAddress();
 		int port = server.getPort();
 		try {
+			System.out.println("trying to reach the leader");
 			socket = new Socket(ip, port);
 			socket.setKeepAlive(true);
 			BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
