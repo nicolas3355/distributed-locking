@@ -83,7 +83,10 @@ public abstract class Lock extends Thread implements LeaderListener {
 				}else if(str.contains(""+Messages.LOCK_ACQUIRED)){
 					currentState = ClientState.Executing;
 					//start a new thread and pummp heart beat
+					Thread thread = sendHeartBeat(out);
+					thread.start();
 					onLockReceived();
+					thread.interrupt();
 					//kill that thread and continue
 					currentState = ClientState.PostExecuting;
 					out.println(Messages.RELEASE);
@@ -104,6 +107,29 @@ public abstract class Lock extends Thread implements LeaderListener {
 	}
 
 
+	private Thread sendHeartBeat(final PrintWriter printWriter){
+		Thread thread = new Thread(new Runnable(){
+
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				while (true){
+					
+					try {
+						Thread.sleep(4000);
+						printWriter.println(Messages.HEART_BEAT);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					
+				}
+			}
+			
+		});
+		return thread;
+	}
+	
 	private void stopConnection(){
 		if(socket != null)
 			try {

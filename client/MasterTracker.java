@@ -7,10 +7,8 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Queue;
 
 import hw2.server.Server;
-import hw2.utils.ConfReader;
 import hw2.utils.Messages;
 
 public class MasterTracker extends Thread{
@@ -21,9 +19,6 @@ public class MasterTracker extends Thread{
 	private Server server;
 	private boolean listening = false;
 	private ArrayList<LeaderListener> listeners;
-	//wait for two seconds
-	private static final int timeOutInMilliseconds = 2000;
-
 
 	private MasterTracker(){}
 
@@ -64,7 +59,7 @@ public class MasterTracker extends Thread{
 	}
 
 	public void run(){
-		while (true){
+		while(true){
 			try {
 				startListening();
 			} catch(Exception e){
@@ -80,8 +75,6 @@ public class MasterTracker extends Thread{
 
 		listening = true;
 		ServerSocket listener = new ServerSocket(9898);
-
-		listener.setSoTimeout(timeOutInMilliseconds);
 		Socket socket = listener.accept();
 
 		BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));

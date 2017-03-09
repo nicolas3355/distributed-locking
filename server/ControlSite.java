@@ -222,7 +222,6 @@ public class ControlSite {
 			try {
 
 				ServerSocket serverSocket = new ServerSocket(listeningPort);
-				serverSocket.setSoTimeout(TIMEOUT_INTERVAL);
 
 				while (true) {
 
