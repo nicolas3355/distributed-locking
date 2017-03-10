@@ -15,6 +15,6 @@ public class Client{
 		};
 		lock.start();
 
-		lock.join();
+		//lock.join();
 	}
 }

@@ -21,7 +21,7 @@ public class ControlSite {
 	private Host[] clients; // all client processes
 	private int leaderId; // id of the leader control site
 	private ConcurrentHashMap<String, BlockingQueue<Integer>> criticalSectionsRequests; // critical
-	private int TIMEOUT_INTERVAL;
+	private int TIMEOUT_INTERVAL = 2000;
 	// sections
 	// queues
 
@@ -254,8 +254,8 @@ public class ControlSite {
 					else if (message ==Messages.OFFER_QUEUE
 							|| message == Messages.POLL_QUEUE) {
 
-						String criticalSectionId = bin.readLine();
 						int processId = Integer.parseInt(bin.readLine());
+						String criticalSectionId = bin.readLine();
 
 						updateQueue(message, criticalSectionId, processId);
 					}

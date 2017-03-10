@@ -131,12 +131,11 @@ public abstract class Lock extends Thread implements LeaderListener {
 				while (true){
 					
 					try {
-						Thread.sleep(4000);
+						Thread.sleep(1000);
 						printWriter.println(Messages.HEART_BEAT);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+						}					
 					
 				}
 			}

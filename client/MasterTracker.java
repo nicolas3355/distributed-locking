@@ -7,6 +7,9 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import hw2.server.Host;
 import hw2.utils.ConfReader;
@@ -19,10 +22,10 @@ public class MasterTracker extends Thread{
 	private static MasterTracker masterTracker;
 	private Host server;
 	private boolean listening = false;
-	private ArrayList<LeaderListener> listeners;
+	private List<LeaderListener> listeners;
 
 	private MasterTracker(){
-		listeners = new ArrayList<>();
+		listeners = Collections.synchronizedList(new ArrayList<>());
 	}
 
 	public  static MasterTracker getMasterServer(LeaderListener listener){
@@ -104,12 +107,8 @@ public class MasterTracker extends Thread{
 	}
 
 	public void unregisterLeaderChangeListener(LeaderListener listener){
-		for(LeaderListener leaderListener:listeners){
-			if(leaderListener == listener){
-				listeners.remove(listener);
-			}
-		}
-
+		listeners.remove(listener);
+		if(listeners.size() == 0) masterTracker = null;
 	}
 
 
